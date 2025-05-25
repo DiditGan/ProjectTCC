@@ -21,10 +21,31 @@ steps:
         "--max-instances",
         "10",
         "--port",
+        # This port should match the port your application listens on INSIDE the container.
+        # Your index.js is configured to listen on process.env.PORT || process.env._PORT || 5000.
+        # Cloud Run sets process.env.PORT to this value.
         "5000",
         "--region",
         "us-central1",
         "--allow-unauthenticated",
+        # Add environment variables here.
+        # IMPORTANT: Replace placeholders with actual values or use Secret Manager.
+        # Example: "--set-env-vars", "DB_HOST=your_db_host,_DB_USER=your_db_user"
+        # For secrets, prefer Google Secret Manager:
+        # Example: "--set-secrets", "DB_PASSWORD=your-db-password-secret:latest"
+        "--set-env-vars",
+        # General environment variables (replace with your actual values)
+        "_CORS_ORIGIN=*", # Or your specific frontend URL
+        # Secrets (replace with actual values or Secret Manager references)
+        # These fallbacks in index.js will be used if not set, but explicit setting is better.
+        "_ACCESS_TOKEN_SECRET=your_very_secure_access_token_secret_here_or_from_secret_manager",
+        "_REFRESH_TOKEN_SECRET=your_very_secure_refresh_token_secret_here_or_from_secret_manager",
+        # Database Environment Variables (replace with your actual values)
+        "DB_HOST=your_database_host",
+        "DB_USER=your_database_user",
+        "DB_PASSWORD=your_database_password",
+        "DB_NAME=your_database_name",
+        "DB_PORT=3306" # Or your database port
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
