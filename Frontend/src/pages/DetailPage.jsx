@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiOutlineShoppingCart, HiArrowLeft, HiOutlineLocationMarker } from "react-icons/hi"; 
-import { useAuth } from "../contexts/AuthContext";
 
 // API URL
 const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
@@ -14,7 +13,6 @@ const DetailPage = () => {
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { currentUser } = useAuth();
   
   useEffect(() => {
     const fetchProductDetails = async () => {

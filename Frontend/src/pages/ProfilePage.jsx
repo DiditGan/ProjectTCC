@@ -9,7 +9,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 
 // Define the API base URL for real API calls
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
 
 const ProfilePage = () => {
   const { currentUser, logout, updateUserData, deleteAccount } = useAuth(); 
