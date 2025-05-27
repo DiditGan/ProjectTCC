@@ -46,12 +46,23 @@ app.use("/api", UserRoute);
 app.use("/api", BarangRoute);
 app.use("/api", TransaksiRoute);
 
+// Synchronize database and start server
+(async () => {
+  try {
+    await db.sync(); // This will create tables if they don't exist
+    console.log("Database synchronized successfully.");
+
+    // Start the server only after successful synchronization
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Unable to synchronize the database:", error);
+  }
+})();
+
 // Test route to check if server is running
 app.get("/api-status", (req, res) => {
   res.json({ status: "Server is running", timestamp: new Date() });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
 });
