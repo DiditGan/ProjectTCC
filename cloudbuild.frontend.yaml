@@ -21,7 +21,7 @@ steps:
         "--timeout",
         "3000s",
         "--port",
-        "3000",
+        "5173",
         "--region",
         "us-central1",
       ]
