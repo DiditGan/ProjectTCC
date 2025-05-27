@@ -1,10 +1,13 @@
-FROM node:20-alpine
+# Stage 1: Build the React application
+FROM node:18 as builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-EXPOSE 5173
-# Build for production
-# RUN npm run build
-# Use a lightweight server to serve the static files
-CMD ["npm", "run", "dev"]
+RUN npm run build
+
+# Stage 2: Serve the application with Nginx
+FROM nginx:alpine
+COPY --from=builder /dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
