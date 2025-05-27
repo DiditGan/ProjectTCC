@@ -51,7 +51,8 @@ export const login = async (req, res) => {
     // Generate access token (short-lived)
     const accessToken = jwt.sign(
       { user_id: user.user_id, email: user.email },
-      _ACCESS_TOKEN_SECRET
+      _ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" } // Added expiresIn
     );
 
     // Generate refresh token (long-lived)

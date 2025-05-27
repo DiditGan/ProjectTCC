@@ -1,17 +1,8 @@
 import User from "../models/UserModel.js";
-import Barang from "../models/BarangModel.js";
-import Transaksi from "../models/TransaksiModel.js";
 import bcrypt from "bcryptjs";
-import fs from "fs";
-import path from "path";
 import db from "../config/Database.js";
-import { Op } from "sequelize";
-import { fileURLToPath } from 'url';
 
 // Get current directory (ES Module equivalent of __dirname)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 export const getUsers = async (req, res) => {
   try {
     const users = await User.findAll({ attributes: { exclude: ["password"] } });
@@ -22,9 +13,9 @@ export const getUsers = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-  const { email, password, name, phone_number, profile_picture } = req.body;
+  const { email, password, name, phone_number } = req.body;
   try {
-    await User.create({ email, password, name, phone_number, profile_picture });
+    await User.create({ email, password, name, phone_number });
     res.status(201).json({ msg: "User created" });
   } catch (error) {
     res.status(400).json({ msg: error.message });
@@ -33,10 +24,10 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const { user_id } = req.params;
-  const { email, name, phone_number, profile_picture } = req.body;
+  const { email, name, phone_number } = req.body;
   try {
     await User.update(
-      { email, name, phone_number, profile_picture },
+      { email, name, phone_number },
       { where: { user_id } }
     );
     res.json({ msg: "User updated" });
@@ -71,13 +62,6 @@ export const updateMyProfile = async (req, res) => {
   try {
     const { email, name, phone_number, address, current_password, new_password } = req.body;
     
-    console.log("📝 Updating profile with data:", {
-      email, name, phone_number, address,
-      has_current_password: !!current_password,
-      has_new_password: !!new_password,
-      file: req.file ? req.file.filename : 'No file uploaded'
-    });
-    
     const user = await User.findByPk(req.userId);
     if (!user) return res.status(404).json({ msg: "User tidak ditemukan" });
 
@@ -87,13 +71,6 @@ export const updateMyProfile = async (req, res) => {
     if (name !== undefined) updateData.name = name;
     if (phone_number !== undefined) updateData.phone_number = phone_number;
     if (address !== undefined) updateData.address = address;
-
-    // Handle profile picture upload
-    if (req.file) {
-      // The path should be relative to the server's static serving root for 'uploads'
-      updateData.profile_picture = `/uploads/profiles/${req.file.filename}`;
-      console.log("📸 Profile picture updated to:", updateData.profile_picture);
-    }
 
     // Handle password update
     if (new_password) {
@@ -174,37 +151,6 @@ export const deleteAccount = async (req, res) => {
     const transaction = await db.transaction();
     
     try {
-      // Delete user's profile picture if exists
-      if (user.profile_picture && user.profile_picture.startsWith('/uploads/')) {
-        const imagePath = path.join(__dirname, '..', user.profile_picture);
-        try {
-          if (fs.existsSync(imagePath)) {
-            fs.unlinkSync(imagePath);
-            console.log(`Deleted user profile image: ${imagePath}`);
-          }
-        } catch (err) {
-          console.error(`Error deleting profile image: ${err.message}`);
-        }
-      }
-      
-      // Find all barang (items) owned by the user
-      const userItems = await Barang.findAll({ where: { user_id }, transaction });
-      
-      // Delete item images
-      for (const item of userItems) {
-        if (item.image_url && item.image_url.startsWith('/uploads/')) {
-          const imagePath = path.join(__dirname, '..', item.image_url);
-          try {
-            if (fs.existsSync(imagePath)) {
-              fs.unlinkSync(imagePath);
-              console.log(`Deleted item image: ${imagePath}`);
-            }
-          } catch (err) {
-            console.error(`Error deleting item image: ${err.message}`);
-          }
-        }
-      }
-      
       // Delete user's barangs
       await Barang.destroy({ where: { user_id }, transaction });
       console.log(`Deleted all items for user ${user_id}`);

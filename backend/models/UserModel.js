@@ -32,6 +32,10 @@ const User = db.define("users", {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  resetPasswordToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: false,
 });

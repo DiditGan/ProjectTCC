@@ -6,7 +6,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const API_BASE_URL = 'http://localhost:5000'; // Ensure this is the correct base URL for your API
+const API_BASE_URL = 'https://givetzy-backend-469569820136.us-central1.run.app'; // Ensure this is the correct base URL for your API
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
       console.log("Attempting to login with email:", email);
       
       // Try to fetch from API
-      const response = await fetch('http://localhost:5000/auth/login', {
+      const response = await fetch('https://givetzy-backend-469569820136.us-central1.run.app/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
     try {
       console.log("Attempting to register with data:", userData);
       
-      const response = await fetch('http://localhost:5000/auth/register', {
+      const response = await fetch('https://givetzy-backend-469569820136.us-central1.run.app/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)

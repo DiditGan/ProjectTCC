@@ -6,15 +6,16 @@ This document provides comprehensive documentation for the backend API of the RA
 
 1. [Environment Setup](#environment-setup)
 2. [Getting Started](#getting-started)
-3. [Database Models](#database-models)
-4. [API Endpoints](#api-endpoints)
+3. [Cloud Deployment](#cloud-deployment)
+4. [Database Models](#database-models)
+5. [API Endpoints](#api-endpoints)
    - [API Status](#api-status)
    - [Authentication](#authentication)
    - [User Management](#user-management)
    - [Product Management](#product-management)
    - [Transaction Management](#transaction-management)
-5. [Error Handling](#error-handling)
-6. [Authentication Flow](#authentication-flow)
+6. [Error Handling](#error-handling)
+7. [Authentication Flow](#authentication-flow)
 
 ## Environment Setup
 
@@ -32,7 +33,7 @@ _ACCESS_TOKEN_SECRET=your__ACCESS_TOKEN_SECRET
 _REFRESH_TOKEN_SECRET=your__REFRESH_TOKEN_SECRET
 
 # Server Configuration
-_PORT=5000
+PORT=5000
 _CORS_ORIGIN=http://localhost:3000
 ```
 
@@ -55,6 +56,17 @@ _CORS_ORIGIN=http://localhost:3000
    ```bash
    pnpm start
    ```
+
+## Cloud Deployment
+
+For Google Cloud Run deployment, ensure you:
+
+1. Set proper environment variables in the Cloud Build configuration. **Important:** Database credentials (`_DB_HOST`, `_DB_USER`, `_DB_PASS`) must be updated to point to your cloud database instance, not `localhost`.
+2. Use PORT environment variable (provided by Cloud Run) for your application to listen on `0.0.0.0`
+3. Configure database connection for cloud environment
+4. Set appropriate memory and CPU limits
+
+The application will automatically use Cloud Run's PORT environment variable when deployed.
 
 ## Database Models
 

@@ -1,12 +1,12 @@
 steps:
   # 1. Build Docker image untuk backend
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/givetzy-backend", "."]
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/$TRIGGER_NAME", "."]
     dir: "backend"
 
   # 2. Push ke Container Registry / Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/givetzy-backend"]
+    args: ["push", "gcr.io/$PROJECT_ID/$TRIGGER_NAME"]
 
   # 3. Deploy ke Cloud Run
   - name: "gcr.io/cloud-builders/gcloud"
@@ -15,37 +15,22 @@ steps:
       [
         "run",
         "deploy",
-        "givetzy-backend",
+        "$TRIGGER_NAME",
         "--image",
-        "gcr.io/$PROJECT_ID/givetzy-backend",
+        "gcr.io/$PROJECT_ID/$TRIGGER_NAME",
         "--max-instances",
         "10",
-        "--port",
-        # This port should match the port your application listens on INSIDE the container.
-        # Your index.js is configured to listen on process.env.PORT || process.env._PORT || 5000.
-        # Cloud Run sets process.env.PORT to this value.
-        "5000",
+        "--port",  # Ensure this matches the EXPOSE in Dockerfile and app listen port
+        "4000",
         "--region",
         "us-central1",
         "--allow-unauthenticated",
-        # Add environment variables here.
-        # IMPORTANT: Replace placeholders with actual values or use Secret Manager.
-        # Example: "--set-env-vars", "DB_HOST=your_db_host,_DB_USER=your_db_user"
-        # For secrets, prefer Google Secret Manager:
-        # Example: "--set-secrets", "DB_PASSWORD=your-db-password-secret:latest"
         "--set-env-vars",
-        # General environment variables (replace with your actual values)
-        "_CORS_ORIGIN=*", # Or your specific frontend URL
-        # Secrets (replace with actual values or Secret Manager references)
-        # These fallbacks in index.js will be used if not set, but explicit setting is better.
-        "_ACCESS_TOKEN_SECRET=your_very_secure_access_token_secret_here_or_from_secret_manager",
-        "_REFRESH_TOKEN_SECRET=your_very_secure_refresh_token_secret_here_or_from_secret_manager",
-        # Database Environment Variables (replace with your actual values)
-        "DB_HOST=your_database_host",
-        "DB_USER=your_database_user",
-        "DB_PASSWORD=your_database_password",
-        "DB_NAME=your_database_name",
-        "DB_PORT=3306" # Or your database port
+        # Replace placeholders with your actual cloud database details and JWT secrets
+        # Values are taken from your .env file as a template
+        "_ACCESS_TOKEN_SECRET=b91c9e543930c5379f40de3c25b5bbeb9eea347de8d4dae1b0a6de568fac0342,_REFRESH_TOKEN_SECRET=a38d6e41db9e23fb95ecc5bb89deea2fae4e30463ebaf48397ddfa3c7e542c32,_DB_HOST=34.28.156.101,_DB_USER=root,_DB_PASS=,_DB_NAME=givetzy,NODE_ENV=production",
+        "--timeout",
+        "3600", # This is a very long timeout, consider reducing it once stable
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging

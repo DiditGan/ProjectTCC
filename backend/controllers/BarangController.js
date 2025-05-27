@@ -1,12 +1,6 @@
 import Barang from "../models/BarangModel.js";
 import User from "../models/UserModel.js";
 import { Op } from "sequelize";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export const getBarang = async (req, res) => {
   try {
@@ -38,7 +32,7 @@ export const getBarang = async (req, res) => {
 
     const barang = await Barang.findAll({
       where: whereClause,
-      include: [{ model: User, attributes: ['user_id', 'name', 'profile_picture'] }],
+      include: [{ model: User, attributes: ['user_id', 'name'] }], // Removed profile_picture from include
       order: [[sortField, sortOrder]]
     });
 
@@ -52,7 +46,7 @@ export const getBarang = async (req, res) => {
 export const getBarangById = async (req, res) => {
   try {
     const barang = await Barang.findByPk(req.params.item_id, {
-      include: [{ model: User, attributes: ['user_id', 'name', 'email', 'phone_number', 'profile_picture'] }]
+      include: [{ model: User, attributes: ['user_id', 'name', 'email', 'phone_number'] }] // Removed profile_picture
     });
     if (!barang) return res.status(404).json({ msg: "Barang tidak ditemukan" });
     
@@ -79,8 +73,8 @@ export const createBarang = async (req, res) => {
       return res.status(401).json({ msg: "Unauthorized: User ID not found" });
     }
 
-    console.log("Creating barang with data:", req.body);
-    console.log("File info:", req.file);
+    // console.log("Creating barang with data:", req.body); // Optional: keep for debugging non-file data
+    // console.log("File info:", req.file); // Removed: req.file will not exist
 
     const { item_name, description, category, price, condition, location, status = "available" } = req.body;
 
@@ -88,13 +82,12 @@ export const createBarang = async (req, res) => {
       return res.status(400).json({ msg: "Nama barang wajib diisi." });
     }
 
-    // Get file path for the image if uploaded
-    let image_url = null;
-    if (req.file) {
-      // Path relative to the 'uploads' static directory
-      image_url = `/uploads/products/${req.file.filename}`;
-      console.log("Image path set to:", image_url);
-    }
+    // Removed image_url logic
+    // let image_url = null;
+    // if (req.file) {
+    //   image_url = `/uploads/products/${req.file.filename}`;
+    //   console.log("Image path set to:", image_url);
+    // }
 
     const barangData = {
       user_id,
@@ -104,7 +97,7 @@ export const createBarang = async (req, res) => {
       price: price ? parseFloat(price) : null,
       condition,
       location,
-      image_url,
+      // image_url, // Removed
       status,
       date_posted: new Date()
     };
@@ -129,12 +122,11 @@ export const updateBarang = async (req, res) => {
       return res.status(403).json({ msg: "Anda tidak memiliki akses untuk update barang ini" });
     }
     
-    console.log("📝 Updating barang with data:", req.body);
-    console.log("📁 New file uploaded:", req.file ? req.file.filename : 'No');
-    
+    // console.log("📝 Updating barang with data:", req.body); // Optional
+    // console.log("📁 New file uploaded:", req.file ? req.file.filename : \'No\'); // Removed
+
     const { item_name, description, category, price, condition, location, status } = req.body;
     
-    // Build update data object
     const updateData = {};
     
     if (item_name !== undefined) updateData.item_name = item_name;
@@ -145,49 +137,42 @@ export const updateBarang = async (req, res) => {
     if (status !== undefined) updateData.status = status;
     if (price !== undefined) updateData.price = price ? parseFloat(price) : null;
 
-    // Handle image update
-    if (req.file) {
-      // Delete old image file if it exists and is different
-      if (barang.image_url && barang.image_url !== `/uploads/products/${req.file.filename}`) {
-        // Construct absolute path to the old image file
-        // barang.image_url is like /uploads/products/old_image.jpg
-        // __dirname is backend/controllers
-        const oldImageAbsolutePath = path.join(__dirname, '..', barang.image_url);
-        try {
-          if (fs.existsSync(oldImageAbsolutePath)) {
-            fs.unlinkSync(oldImageAbsolutePath);
-            console.log("🗑️ Deleted old image:", oldImageAbsolutePath);
-          }
-        } catch (deleteError) {
-          console.error("Failed to delete old image:", oldImageAbsolutePath, deleteError);
-        }
-      }
-      
-      // Set new image URL (relative path)
-      updateData.image_url = `/uploads/products/${req.file.filename}`;
-      console.log("🖼️ Updated image URL to:", updateData.image_url);
-    }
+    // Removed image update logic
+    // if (req.file) {
+    //   if (barang.image_url && barang.image_url !== `/uploads/products/${req.file.filename}`) {
+    //     const oldImageAbsolutePath = path.join(__dirname, \'..\', barang.image_url);
+    //     try {
+    //       if (fs.existsSync(oldImageAbsolutePath)) {
+    //         fs.unlinkSync(oldImageAbsolutePath);
+    //         console.log("🗑️ Deleted old image:", oldImageAbsolutePath);
+    //       }
+    //     } catch (deleteError) {
+    //       console.error("Failed to delete old image:", oldImageAbsolutePath, deleteError);
+    //     }
+    //   }
+    //   updateData.image_url = `/uploads/products/${req.file.filename}`;
+    //   console.log("🖼️ Updated image URL to:", updateData.image_url);
+    // }
 
     await barang.update(updateData);
     
-    // Fetch updated barang with user info
     const updatedBarang = await Barang.findByPk(req.params.item_id, {
-      include: [{ model: User, attributes: ['user_id', 'name', 'profile_picture'] }]
+      include: [{ model: User, attributes: ['user_id', 'name'] }] // Removed profile_picture
     });
     
     res.json({ msg: "Barang berhasil diupdate", data: updatedBarang });
   } catch (error) {
     console.error("❌ Update barang error:", error);
     
-    // Clean up uploaded file if database update fails
-    if (req.file) {
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log("🗑️ Cleaned up uploaded file due to error");
-      } catch (unlinkError) {
-        console.error("Failed to clean up file:", unlinkError);
-      }
-    }
+    // Removed cleanup of uploaded file
+    // if (req.file) {
+    //   try {
+    //     fs.unlinkSync(req.file.path);
+    //     console.log("🗑️ Cleaned up uploaded file due to error");
+    //   } catch (unlinkError) {
+    //     console.error("Failed to clean up file:", unlinkError);
+    //   }
+    // }
     
     res.status(400).json({ msg: error.message });
   }
@@ -202,20 +187,18 @@ export const deleteBarang = async (req, res) => {
       return res.status(403).json({ msg: "Anda tidak memiliki akses untuk menghapus barang ini" });
     }
 
-    // Delete associated image file
-    if (barang.image_url) {
-      // barang.image_url is like /uploads/products/image.jpg
-      // __dirname is backend/controllers
-      const imageAbsolutePath = path.join(__dirname, '..', barang.image_url);
-      try {
-        if (fs.existsSync(imageAbsolutePath)) {
-          fs.unlinkSync(imageAbsolutePath);
-          console.log("🗑️ Deleted image file:", imageAbsolutePath);
-        }
-      } catch (deleteError) {
-        console.error("Failed to delete image file:", imageAbsolutePath, deleteError);
-      }
-    }
+    // Removed deletion of image file
+    // if (barang.image_url) {
+    //   const imageAbsolutePath = path.join(__dirname, \'..\', barang.image_url);
+    //   try {
+    //     if (fs.existsSync(imageAbsolutePath)) {
+    //       fs.unlinkSync(imageAbsolutePath);
+    //       console.log(\`🗑️ Deleted image for item ${barang.item_id}: ${imageAbsolutePath}\`);
+    //     }
+    //   } catch (deleteError) {
+    //     console.error(\`Failed to delete image ${imageAbsolutePath}: \`, deleteError);
+    //   }
+    // }
 
     await barang.destroy();
     res.json({ msg: "Barang berhasil dihapus" });

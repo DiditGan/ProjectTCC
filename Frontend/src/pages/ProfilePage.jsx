@@ -9,7 +9,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 
 // Define the API base URL for real API calls
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
 
 const ProfilePage = () => {
   const { currentUser, logout, updateUserData, deleteAccount } = useAuth(); 
@@ -22,8 +22,6 @@ const ProfilePage = () => {
   const [editData, setEditData] = useState({});
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
-  const [profileImageFile, setProfileImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // New state variables for account deletion
@@ -120,112 +118,72 @@ const ProfilePage = () => {
 
   // Helper function to get full profile image URL with better error handling
   const getProfileImageUrl = (imagePath) => {
-    if (!imagePath) return null; // Return null to trigger skeleton UI
-    if (imagePath.startsWith('http')) return imagePath;
-    // Ensure path starts with /
-    return `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`; 
-  };
-
-  // Handle profile image upload
-  const handleProfileImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Reset previous error messages
-    setProfileError("");
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setProfileError('File harus berupa gambar (JPEG, PNG, GIF)');
-      return;
+    if (!imagePath) {
+      // Return a default placeholder image or null
+      return "/src/assets/Yedhit.jpg"; // Or your placeholder
     }
-    
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      setProfileError('Ukuran file tidak boleh lebih dari 2MB');
-      return;
+    // Assuming imagePath is a full URL or a relative path that the backend serves
+    // If it's a relative path like 'profiles/profile-image.png' and served from API_BASE_URL/uploads/
+    if (!imagePath.startsWith('http')) {
+      return `${API_BASE_URL}/uploads/${imagePath}`;
     }
-    
-    setProfileImageFile(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target.result);
-    };
-    reader.readAsDataURL(file);
-    
-    console.log("Profile image selected:", file.name, file.type, `${(file.size / 1024).toFixed(2)} KB`);
+    return imagePath;
   };
 
   const handleSaveProfile = async () => {
+    setProfileError("");
+    setProfileSuccess("");
+    setIsSubmitting(true);
+
+    // Basic validation
+    if (!editData.name || !editData.email) {
+      setProfileError("Name and Email are required.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      setProfileError("");
-      setProfileSuccess("");
-      setIsSubmitting(true);
-      
-      // Validate form data
-      if (!editData.name || !editData.email) {
-        setProfileError("Nama dan email wajib diisi");
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setProfileError("Authentication token not found. Please log in again.");
         setIsSubmitting(false);
         return;
       }
-      
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        // Use FormData for file upload
-        const formData = new FormData();
-        formData.append('name', editData.name);
-        formData.append('email', editData.email);
-        formData.append('phone_number', editData.phone || ''); // Ensure empty string if null/undefined
-        formData.append('address', editData.address || ''); // Ensure empty string
-        
-        // Add profile image file if selected
-        if (profileImageFile) {
-          formData.append('profileImage', profileImageFile);
-          console.log("Uploading profile image:", profileImageFile.name);
-        }
-        
-        // Log form data for debugging
-        for (let [key, value] of formData.entries()) {
-          console.log(`FormData - ${key}: ${value instanceof File ? value.name : value}`);
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/api/profile`, {
-          method: 'PUT',
-          headers: { 
-            'Authorization': `Bearer ${token}`
-            // 'Content-Type' is automatically set by browser for FormData
-          },
-          body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.msg || "Failed to update profile");
-        }
-        
-        console.log("Profile updated successfully:", data);
-        
-        // Update local user state with new data
-        setUser(data.user);
-        updateUserData(data.user); // Update AuthContext
-        setEditData({
-          name: data.user.name,
-          email: data.user.email,
-          phone: data.user.phone_number || "",
-          address: data.user.address || ""
-        });
-        
-        setProfileSuccess("Profil berhasil diperbarui");
-        setIsEditing(false);
-        setProfileImageFile(null);
-        setImagePreview(null);
+
+      const payload = {
+        name: editData.name,
+        email: editData.email,
+        phone_number: editData.phone_number || "",
+        address: editData.address || "",
+      };
+
+      if (editData.password && editData.password.trim() !== "") {
+        payload.password = editData.password;
       }
+
+
+      const response = await fetch(`${API_BASE_URL}/api/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json', // Added Content-Type for JSON
+        },
+        body: JSON.stringify(payload), // Send as JSON
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.msg || "Failed to update profile");
+      }
+
+      setProfileSuccess("Profile updated successfully!");
+      updateUserData(responseData.user); // Assuming backend returns updated user
+      setUser(responseData.user);
+      setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
-      setProfileError(error.message);
+      setProfileError(error.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -343,9 +301,9 @@ const ProfilePage = () => {
                 {/* User Info in Sidebar */}
                 <div className="p-6 text-center border-b">
                   <div className="relative inline-block mb-3">
-                    {imagePreview || getProfileImageUrl(user?.profile_picture) ? (
+                    {getProfileImageUrl(user?.profile_picture) ? (
                       <img
-                        src={imagePreview || getProfileImageUrl(user?.profile_picture)}
+                        src={getProfileImageUrl(user?.profile_picture)}
                         alt={user?.name || 'User'}
                         className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-green-100"
                         onError={(e) => {
@@ -646,56 +604,6 @@ const ProfilePage = () => {
                       </div>
                     )}
                     
-                    {/* Profile Image Upload Section */}
-                    {isEditing && (
-                      <div className="mb-6 flex flex-col items-center">
-                        <div className="relative">
-                          {imagePreview || getProfileImageUrl(user?.profile_picture) ? (
-                            <img
-                              src={imagePreview || getProfileImageUrl(user?.profile_picture)}
-                              alt={user?.name || 'User'}
-                              className="w-32 h-32 rounded-full object-cover border-4 border-green-100"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.parentNode.classList.add("bg-gray-300");
-                                e.target.classList.add("opacity-0");
-                              }}
-                            />
-                          ) : (
-                            <div className="w-32 h-32 rounded-full bg-gray-300 border-4 border-green-100 flex items-center justify-center animate-pulse">
-                              <svg className="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                            </div>
-                          )}
-                          <label className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full p-3 cursor-pointer shadow-lg hover:bg-green-700 transition-colors">
-                            <HiOutlinePhotograph className="w-5 h-5" />
-                            <input 
-                              type="file" 
-                              className="hidden" 
-                              accept="image/*" 
-                              onChange={handleProfileImageUpload}
-                            />
-                          </label>
-                        </div>
-                        <p className="mt-3 text-sm text-gray-600">Klik ikon kamera untuk mengganti foto profil</p>
-                        {profileImageFile && (
-                          <div className="text-xs text-green-600 mt-1">
-                            {profileImageFile.name} ({(profileImageFile.size/1024).toFixed(1)} KB)
-                            <button 
-                              onClick={() => {
-                                setProfileImageFile(null);
-                                setImagePreview(null);
-                              }}
-                              className="ml-2 text-red-500 hover:text-red-700"
-                            >
-                              Hapus
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -771,8 +679,6 @@ const ProfilePage = () => {
                               setIsEditing(false);
                               setProfileError("");
                               setProfileSuccess("");
-                              setProfileImageFile(null);
-                              setImagePreview(null);
                               // Reset form data
                               setEditData({
                                 name: user.name,

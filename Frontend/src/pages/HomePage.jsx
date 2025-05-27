@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiSearch, HiFilter } from "react-icons/hi";
-import { useAuth } from "../contexts/AuthContext";
 
 // API URL
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
 
 const PRODUCT_CATEGORIES = [
   "All Items",
@@ -25,9 +24,6 @@ const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { currentUser } = useAuth();
 
   useEffect(() => {
     fetchProducts();
