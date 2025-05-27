@@ -19,7 +19,7 @@ const PAYMENT_METHODS = [
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser } = useAuth();
+  useAuth();
   
   // State variables
   const [product, setProduct] = useState(null);

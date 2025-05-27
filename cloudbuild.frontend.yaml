@@ -1,33 +1,35 @@
 steps:
-  # 1. Build Docker image untuk backend
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/givetzy-frontend", "."]
+  # Step 1: Install dependencies (pakai npm install jika tidak ada package-lock.json)
+  - name: "gcr.io/cloud-builders/npm"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        echo "Installing dependencies..."
+        npm ci
+    dir: "Frontend"
+    volumes:
+      - name: "npm-cache"
+        path: /root/.npm
+
+  # Step 2: Build frontend
+  - name: "gcr.io/cloud-builders/npm"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        echo "Running npm build..."
+        npm run build
+    dir: "Frontend"
+    volumes:
+      - name: "npm-cache"
+        path: /root/.npm
+
+  # Step 3: Deploy ke App Engine
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args: ["app", "deploy", "--quiet"]
     dir: "Frontend"
 
-  # 2. Push ke Container Registry / Artifact Registry
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/givetzy-frontend"]
-
-  # 3. Deploy ke Cloud Run
-  - name: "gcr.io/cloud-builders/gcloud"
-    entrypoint: gcloud
-    args:
-      [
-        "run",
-        "deploy",
-        "givetzy-frontend",
-        "--image",
-        "gcr.io/$PROJECT_ID/givetzy-frontend",
-        "--timeout",
-        "3000s",
-        "--port",
-        "80",
-        "--region",
-        "us-central1",
-        "--allow-unauthenticated",
-      ]
-
-# Log hanya akan disimpan di Google Cloud Logging
-# Log tidak akan disimpan di Google Cloud Storage (butuh hak akses).
 options:
   logging: CLOUD_LOGGING_ONLY
