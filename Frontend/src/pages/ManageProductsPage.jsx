@@ -42,12 +42,14 @@ const ManageProductsPage = () => {
     price: "",
     condition: "",
     description: "",
-    images: [],
+    // images: [], // Removed image state
+    // imageFile: null, // Removed image file state
   });
 
   useEffect(() => {
     fetchProducts();
   }, [filterStatus]);
+  
 
   const fetchProducts = async () => {
     try {
@@ -103,53 +105,6 @@ const ManageProductsPage = () => {
     }));
   };
 
-  // Handle image upload
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    // For simplicity, handling only the first file if multiple are selected.
-    // The backend UploadMiddleware is configured for productUpload.single('image')
-    const file = files[0];
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB");
-      return;
-    }
-
-    // Store the actual file for upload
-    setNewProduct((prev) => ({
-      ...prev,
-      imageFile: file,
-    }));
-
-    // Create preview for display
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setNewProduct((prev) => ({
-        ...prev,
-        images: [e.target.result],
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Remove uploaded image
-  const removeImage = (index) => {
-    setNewProduct((prev) => ({
-      ...prev,
-      images: [],
-      imageFile: null,
-    }));
-  };
-
   // Submit new product
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -171,27 +126,23 @@ const ManageProductsPage = () => {
         throw new Error("Authentication token not found");
       }
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("item_name", newProduct.name);
-      formData.append("category", newProduct.category);
-      formData.append("price", parseFloat(newProduct.price));
-      formData.append("condition", newProduct.condition);
-      formData.append("description", newProduct.description || "");
-      formData.append("status", "available"); // Default status
-
-      // Add the image file if exists
-      if (newProduct.imageFile) {
-        formData.append("image", newProduct.imageFile);
-      }
+      const payload = {
+        item_name: newProduct.name,
+        category: newProduct.category,
+        price: parseFloat(newProduct.price),
+        condition: newProduct.condition,
+        description: newProduct.description || "",
+        status: "available",
+        // image_url will be handled by backend if it expects a URL, or removed if not needed
+      };
 
       const response = await fetch(`${API_BASE_URL}/api/barang`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // Content-Type is set automatically for FormData
+          "Content-Type": "application/json", // Added for JSON payload
         },
-        body: formData,
+        body: JSON.stringify(payload), // Send as JSON
       });
 
       if (!response.ok) {
@@ -199,18 +150,16 @@ const ManageProductsPage = () => {
         throw new Error(errorData.msg || "Failed to create product");
       }
 
-      // Reset form and close modal
       setNewProduct({
         name: "",
         category: "",
         price: "",
         condition: "",
         description: "",
-        images: [],
+        // images: [], // Removed
+        // imageFile: null, // Removed
       });
       setShowAddModal(false);
-
-      // Refresh products list
       fetchProducts();
     } catch (error) {
       console.error("Error creating product:", error);
@@ -294,7 +243,8 @@ const ManageProductsPage = () => {
       item_id: product.item_id,
       name: product.item_name,
       price: product.price.toString(),
-      images: product.image_url ? [product.image_url] : [],
+      // images: product.image_url ? [product.image_url] : [], // Removed image state for edit
+      // imageFile: null, // Removed image file state for edit
     });
     setShowEditModal(true);
   };
@@ -308,84 +258,26 @@ const ManageProductsPage = () => {
     }));
   };
 
-  // Handle image upload for edit form
-  const handleEditImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    const file = files[0]; // Handle single file for edit as well
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB");
-      return;
-    }
-
-    // Store the actual file for upload
-    setEditingProduct((prev) => ({
-      ...prev,
-      imageFile: file,
-    }));
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setEditingProduct((prev) => ({
-        ...prev,
-        images: [e.target.result],
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Remove uploaded image from edit form
-  const removeEditImage = (index) => {
-    setEditingProduct((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
-  };
-
   // Submit edited product
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!editingProduct) return;
 
     try {
-      // Simple validation
-      if (
-        !editingProduct.name ||
-        !editingProduct.category ||
-        !editingProduct.price ||
-        !editingProduct.condition
-      ) {
-        alert("Please fill in all required fields.");
-        return;
-      }
-
       const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("Authentication token not found");
       }
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("item_name", editingProduct.name);
-      formData.append("category", editingProduct.category);
-      formData.append("price", parseFloat(editingProduct.price));
-      formData.append("condition", editingProduct.condition);
-      formData.append("description", editingProduct.description || "");
-      formData.append("status", editingProduct.status);
-
-      // Add the image file if a new one was selected for edit
-      if (editingProduct.imageFile) {
-        formData.append("image", editingProduct.imageFile);
-      }
+      const payload = {
+        item_name: editingProduct.name,
+        category: editingProduct.category,
+        price: parseFloat(editingProduct.price),
+        condition: editingProduct.condition,
+        description: editingProduct.description || "",
+        status: editingProduct.status || "available",
+        // image_url will be handled by backend if it expects a URL, or removed if not needed
+      };
 
       const response = await fetch(
         `${API_BASE_URL}/api/barang/${editingProduct.item_id}`,
@@ -393,9 +285,9 @@ const ManageProductsPage = () => {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
-            // Content-Type is set automatically for FormData
+            "Content-Type": "application/json", // Added for JSON payload
           },
-          body: formData,
+          body: JSON.stringify(payload), // Send as JSON
         }
       );
 
@@ -404,7 +296,6 @@ const ManageProductsPage = () => {
         throw new Error(errorData.msg || "Failed to update product");
       }
 
-      // Close modal and refresh products
       setShowEditModal(false);
       setEditingProduct(null);
       fetchProducts();
@@ -468,160 +359,163 @@ const ManageProductsPage = () => {
         </div>
 
         {/* Products Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-          {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading products...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-red-500 mb-4">Error: {error}</p>
-              <button
-                onClick={fetchProducts}
-                className="bg-green-600 text-white px-4 py-2 rounded-md"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Produk
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Harga
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Tanggal
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Aksi
-                    </th>
+          <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading products...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-500 mb-4">Error: {error}</p>
+                <button
+            onClick={fetchProducts}
+            className="bg-green-600 text-white px-4 py-2 rounded-md"
+                >
+            Try Again
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Produk
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Harga
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Tanggal
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <tr key={product.item_id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <div className="h-10 w-10 flex-shrink-0 mr-3 bg-gray-200 rounded-md overflow-hidden">
+                    {product.image_url ? (
+                <img
+                  className="h-10 w-10 object-cover transition-opacity duration-300"
+                  src={`${API_BASE_URL}${product.image_url}`}
+                  alt={product.item_name}
+                  onLoad={(e) => e.target.classList.remove('opacity-0')}
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/40?text=No+Image";
+                  }}
+                  style={{ opacity: 0 }}
+                />
+                    ) : (
+                <div className="h-10 w-10 flex items-center justify-center text-gray-500 text-xs">
+                  No Image
+                </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                {product.item_name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                {product.category}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900 font-medium">
+                  {formatPrice(product.price)}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {product.condition}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span
+                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    product.status === "available"
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {product.status === "available"
+                    ? "Tersedia"
+                    : "Terjual"}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {new Date(product.date_posted).toLocaleDateString()}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button
+                  onClick={() => toggleProductStatus(product.item_id)}
+                  className="text-blue-600 hover:text-blue-900 mr-3"
+                >
+                  {product.status === "available"
+                    ? "Tandai Terjual"
+                    : "Tandai Tersedia"}
+                </button>
+                <button
+                  onClick={() => handleEditClick(product)}
+                  className="text-green-600 hover:text-green-900 mr-3"
+                  title="Edit"
+                >
+                  <HiPencil />
+                </button>
+                <button
+                  onClick={() =>
+                    setShowDeleteConfirm(product.item_id)
+                  }
+                  className="text-red-600 hover:text-red-900"
+                  title="Delete"
+                >
+                  <HiTrash />
+                </button>
+              </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredProducts.length > 0 ? (
-                    filteredProducts.map((product) => (
-                      <tr key={product.item_id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0 mr-3">
-                              <img
-                                className="h-10 w-10 rounded-md object-cover"
-                                src={
-                                  product.image_url
-                                    ? `${API_BASE_URL}${product.image_url}`
-                                    : "https://via.placeholder.com/40?text=No+Image"
-                                }
-                                alt={product.item_name}
-                                onError={(e) => {
-                                  e.target.src =
-                                    "https://via.placeholder.com/40?text=No+Image";
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {product.item_name}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {product.category}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-medium">
-                            {formatPrice(product.price)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {product.condition}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              product.status === "available"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {product.status === "available"
-                              ? "Tersedia"
-                              : "Terjual"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(product.date_posted).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => toggleProductStatus(product.item_id)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                          >
-                            {product.status === "available"
-                              ? "Tandai Terjual"
-                              : "Tandai Tersedia"}
-                          </button>
-                          <button
-                            onClick={() => handleEditClick(product)}
-                            className="text-green-600 hover:text-green-900 mr-3"
-                            title="Edit"
-                          >
-                            <HiPencil />
-                          </button>
-                          <button
-                            onClick={() =>
-                              setShowDeleteConfirm(product.item_id)
-                            }
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <HiTrash />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500"
-                      >
-                        Tidak ada barang yang ditemukan
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+                ))
+              ) : (
+                <tr>
+                  <td
+              colSpan="6"
+              className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500"
+                  >
+              Tidak ada barang yang ditemukan
+                  </td>
+                </tr>
+              )}
+            </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+              </div>
 
-      {/* Add New Product Modal */}
+              {/* Add New Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
@@ -745,6 +639,7 @@ const ManageProductsPage = () => {
                 ></textarea>
               </div>
 
+              {/* Remove image upload section
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Foto Barang
@@ -796,6 +691,7 @@ const ManageProductsPage = () => {
                   maksimum: 5MB.
                 </p>
               </div>
+              */}
 
               <div className="flex justify-end">
                 <button
@@ -942,80 +838,37 @@ const ManageProductsPage = () => {
                 ></textarea>
               </div>
 
+              {/* Remove image upload section
               <div className="mb-4">
                 <label
-                  htmlFor="edit-status"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  htmlFor="editImages"
+                  className="block text-sm font-medium text-gray-700"
                 >
-                  Status Barang
+                  Product Image
                 </label>
-                <select
-                  id="edit-status"
-                  name="status"
-                  value={editingProduct.status}
-                  onChange={handleEditInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="available">Tersedia</option>
-                  <option value="sold">Terjual</option>
-                </select>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Foto Barang
-                </label>
-
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  {editingProduct.images.map((image, index) => (
-                    <div
-                      key={index}
-                      className="relative h-24 bg-gray-100 rounded-md overflow-hidden"
-                    >
-                      <img
-                        src={
-                          image.startsWith("blob:")
-                            ? image
-                            : `${API_BASE_URL}${image}`
-                        }
-                        alt={`Preview ${index + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeEditImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs"
-                        title="Remove image"
-                      >
-                        <HiX />
-                      </button>
-                    </div>
-                  ))}
-
-                  {editingProduct.images.length < 1 && ( // Allow only one image
-                    <label className="h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        // multiple // Remove multiple
-                        onChange={handleEditImageUpload}
-                        className="hidden"
-                      />
-                      <div className="flex flex-col items-center">
-                        <HiPhotograph className="h-8 w-8 text-gray-400" />
-                        <span className="text-xs text-gray-500 text-center mt-1">
-                          Tambah Foto
-                        </span>
-                      </div>
-                    </label>
-                  )}
+                <div className="mt-1 flex items-center">
+                  <input
+                    type="file"
+                    id="editImages"
+                    name="images"
+                    accept="image/*"
+                    onChange={handleEditImageUpload} // This function is now removed
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                  />
                 </div>
-
-                <p className="text-xs text-gray-500">
-                  Anda dapat mengunggah 1 foto. Format: JPG, PNG. Ukuran
-                  maksimum: 5MB.
-                </p>
+                {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
+                  <div className="mt-2 relative w-32 h-32">
+                    <img src={editingProduct.images[0]} alt="Preview" className="w-full h-full object-cover rounded" />
+                    <button
+                      onClick={() => removeEditImage(0)} // This function is now removed
+                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs"
+                    >
+                      <HiX />
+                    </button>
+                  </div>
+                )}
               </div>
+              */}
 
               <div className="flex justify-end">
                 <button
