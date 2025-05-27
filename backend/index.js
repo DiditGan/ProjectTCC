@@ -60,6 +60,7 @@ app.use("/api", TransaksiRoute);
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
+
   } catch (error) {
     console.error("Unable to synchronize the database:", error);
   }
