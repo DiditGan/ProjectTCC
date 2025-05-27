@@ -19,7 +19,10 @@ const app = express();
 // Middleware - Order is important!
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://givetzy-frontend-469569820136.us-central1.run.app",
+    ],
     credentials: true,
   })
 );
