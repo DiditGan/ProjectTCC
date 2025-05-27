@@ -1,4 +1,4 @@
-@host = http://localhost:4000
+@host = https://givetzy-backend-469569820136.us-central1.run.app
 @cloudRunHost = https://c-04-460105.uc.r.appspot.com/
 @accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDc5Mzc1NTUsImV4cCI6MTc0NzkzODQ1NX0.6ZbumjS3MF7nXPVovCU8M_GEQhyynMU-jb2WRi7DpOk
 @refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDc5Mzc1NTUsImV4cCI6MTc0ODU0MjM1NX0.3gGGKELDaA_2_nU8iAFYMsRWrQS-d_Le2m9ZWpe1m-Y
